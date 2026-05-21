@@ -1,4 +1,89 @@
-<div class="section-placeholder">
-  <h2 class="section-title">Home</h2>
-  <p class="section-subtitle">This section is coming in a future phase.</p>
+<div class="home-section">
+
+  <!-- ── Live Clock ──────────────────────────────────────── -->
+  <div class="home-clock">
+    <div class="clock-time" id="clock-time">00:00:00</div>
+    <div class="clock-date" id="clock-date">Loading…</div>
+  </div>
+
+  <!-- ── Google Calendar Embed ───────────────────────────── -->
+  <!-- Google Calendar does not support dark theming via the embed URL.
+       The iframe background will be white — expected and acceptable for v1.
+       Replace with the Google Calendar API for theme control in a future phase. -->
+  <div class="calendar-embed-wrapper">
+    <iframe
+      src="https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=America%2FVancouver&showPrint=0&mode=WEEK&showTitle=0&showTz=0&src=amF5ZGVuLmlubmlzc0BnbWFpbC5jb20&src=NmZhMzhiOGRjZjdmZjk2ZmRhODdjMjFlNDY0MWNiZWRmNmMwZGIxOGUyYjRlZjQzZDBhZTQ2ZmRkZWY3ZWUyOEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=cm9iaW5zb24uY2hyaXNzeUBnbWFpbC5jb20&src=aWFuLmlubmlzc0BnbWFpbC5jb20&src=aW5uaXNzLmtlaXJhQGdtYWlsLmNvbQ&color=%23d50000&color=%23478eff&color=%23b39ddb&color=%234285f4&color=%23e4c441"
+      style="border-width:0"
+      width="100%"
+      height="600"
+      frameborder="0"
+      scrolling="no"
+    ></iframe>
+  </div>
+
+  <!-- ── Quick Links ─────────────────────────────────────── -->
+  <div>
+    <p class="quick-links-label">Quick Links</p>
+    <div class="quick-links-grid">
+
+      <!-- QuickBooks -->
+      <a class="quick-link-tile" href="https://quickbooks.intuit.com" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="3" width="18" height="18" rx="3"/>
+          <path d="M8 12h8M12 8v8"/>
+        </svg>
+        <span class="quick-link-label">QuickBooks</span>
+      </a>
+
+      <!-- Hostinger -->
+      <a class="quick-link-tile" href="https://hpanel.hostinger.com" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/>
+          <path d="M2 12l10 5 10-5"/>
+        </svg>
+        <span class="quick-link-label">Hostinger</span>
+      </a>
+
+      <!-- Wealthsimple -->
+      <a class="quick-link-tile" href="https://my.wealthsimple.com" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24">
+          <path d="M3 17l4-8 4 6 3-4 4 6"/>
+          <path d="M3 21h18"/>
+        </svg>
+        <span class="quick-link-label">Wealthsimple</span>
+      </a>
+
+      <!-- TD Bank -->
+      <a class="quick-link-tile" href="https://easyweb.td.com" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24">
+          <rect x="2" y="8" width="20" height="12" rx="2"/>
+          <path d="M6 8V6a6 6 0 0112 0v2"/>
+          <path d="M12 13v3"/>
+        </svg>
+        <span class="quick-link-label">TD Bank</span>
+      </a>
+
+      <!-- Google Calendar -->
+      <a class="quick-link-tile" href="https://calendar.google.com" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <path d="M16 2v4M8 2v4M3 10h18"/>
+          <path d="M8 15h2v2H8z"/>
+        </svg>
+        <span class="quick-link-label">Google Calendar</span>
+      </a>
+
+      <!-- ImprovMX -->
+      <a class="quick-link-tile" href="https://app.improvmx.com" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+          <path d="M22 6l-10 7L2 6"/>
+        </svg>
+        <span class="quick-link-label">ImprovMX</span>
+      </a>
+
+    </div>
+  </div>
+
 </div>

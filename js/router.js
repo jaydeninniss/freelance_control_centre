@@ -19,6 +19,13 @@ async function navigate(section) {
     const res = await fetch(`sections/${section}.html`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     panel.innerHTML = await res.text();
+
+    // Section init pattern: after injecting HTML, call initSectionName() if it exists.
+    // Each section's JS file exposes a global init function following this convention:
+    //   home → initHome(), finance → initFinance(), tasks → initTasks(), etc.
+    // Future phases just need to define their init function — the router wires it up automatically.
+    const initFn = 'init' + section.charAt(0).toUpperCase() + section.slice(1);
+    if (typeof window[initFn] === 'function') window[initFn]();
   } catch (err) {
     panel.innerHTML = `<div class="section-placeholder">
       <h2 class="section-title">Error</h2>
