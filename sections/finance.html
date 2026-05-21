@@ -1,4 +1,358 @@
-<div class="section-placeholder">
-  <h2 class="section-title">Finance</h2>
-  <p class="section-subtitle">This section is coming in a future phase.</p>
+<div class="finance-section">
+
+  <!-- ── Sub-tab Nav ───────────────────────────────────────── -->
+  <div class="finance-tabs">
+    <button class="finance-tab active" data-tab="tax-tracker">Tax Tracker</button>
+    <button class="finance-tab" data-tab="quote">Quote Calculator</button>
+    <button class="finance-tab" data-tab="budget">Budget Calculator</button>
+    <button class="finance-tab" data-tab="cashflow">Cash Flow</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TAX TRACKER
+  ══════════════════════════════════════════════════════ -->
+  <div class="finance-panel active" id="panel-tax-tracker">
+
+    <!-- Header stats -->
+    <div class="tt-header-stats">
+      <div class="tt-hs-item">
+        <div class="tt-hs-label">Total Invoiced</div>
+        <div class="tt-hs-value" id="tt-h-earned">$0</div>
+      </div>
+      <div class="tt-hs-item">
+        <div class="tt-hs-label">Tax to Set Aside</div>
+        <div class="tt-hs-value" id="tt-h-tax">$0</div>
+      </div>
+      <div class="tt-hs-item">
+        <div class="tt-hs-label">In Wealthsimple</div>
+        <div class="tt-hs-value" id="tt-h-ws">$0</div>
+      </div>
+      <div class="tt-hs-item">
+        <div class="tt-hs-label">Funded</div>
+        <div class="tt-hs-value" id="tt-h-pct">—</div>
+      </div>
+    </div>
+
+    <!-- Wealthsimple progress bar -->
+    <div class="tt-progress-section">
+      <div class="tt-progress-meta">
+        <div class="tt-progress-label-group">
+          <span class="tt-progress-title">Wealthsimple Tax Account</span>
+          <span class="tt-progress-pct" id="tt-prog-pct"></span>
+        </div>
+        <div class="tt-ws-input-row">
+          <span class="tt-ws-label">Balance $</span>
+          <input type="number" id="tt-ws-bal" class="tt-ws-input" placeholder="0" min="0" step="1">
+          <button type="button" class="tt-btn-small" onclick="ttSetWSBalance()">Update</button>
+        </div>
+      </div>
+      <div class="tt-progress-track">
+        <div class="tt-progress-fill" id="tt-prog-fill" style="width:0%"></div>
+      </div>
+      <div class="tt-progress-amounts">
+        <span id="tt-prog-saved">$0 saved</span>
+        <span id="tt-prog-target">$0 target</span>
+      </div>
+    </div>
+
+    <!-- Main 2-col grid -->
+    <div class="tt-main-grid">
+
+      <!-- Left: Add invoice form + Tax breakdown -->
+      <div>
+        <div class="fi-section-label">Add Invoice</div>
+
+        <div class="tt-field">
+          <label>Date</label>
+          <input type="date" id="tt-f-date" autocomplete="off">
+        </div>
+
+        <div class="tt-field">
+          <label>Client / Description <span style="opacity:0.5">— optional</span></label>
+          <input type="text" id="tt-f-desc" placeholder="e.g. Crankworx shoot — edit package" autocomplete="off">
+        </div>
+
+        <div class="tt-field">
+          <label>Invoice Amount</label>
+          <input type="number" id="tt-f-amount" placeholder="$0.00" min="0" step="0.01" oninput="ttPreviewTax()" autocomplete="off">
+        </div>
+
+        <div class="tt-preview-row">
+          <div class="pl">
+            Transfer to Tax/CPP Holding
+            <small>25% · rounded to dollar</small>
+          </div>
+          <div class="tt-preview-amount" id="tt-preview">$0</div>
+        </div>
+
+        <button type="button" class="tt-btn-add" onclick="ttAddInvoice()">Add to Ledger</button>
+
+        <!-- Tax breakdown -->
+        <div class="tt-breakdown">
+          <div class="fi-section-label" style="margin-top:24px">Estimated Tax Breakdown</div>
+
+          <div class="tt-bd-row" style="padding-bottom:10px">
+            <span class="tt-bd-name">Business Expenses (YTD)</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="color:var(--text-muted);font-size:var(--text-sm)">$</span>
+              <input type="number" id="tt-exp-input" class="tt-ws-input" placeholder="0" min="0" step="1" style="width:100px;font-size:var(--text-sm);text-align:right">
+              <button type="button" class="tt-btn-small" onclick="ttSetExpenses()">Update</button>
+            </div>
+          </div>
+
+          <div class="tt-bd-row" id="tt-bd-net-row" style="display:none">
+            <span class="tt-bd-name">Net Business Income <span class="tt-rate">after expenses</span>
+              <span class="help" onclick="ttToggleTip(this)">
+                <button type="button" class="help-btn">?</button>
+                <span class="tip">Your gross invoiced income minus business expenses. Both CPP and income tax are calculated on this lower amount — expenses directly reduce your tax bill.</span>
+              </span>
+            </span>
+            <span class="tt-bd-val" id="tt-bd-net">—</span>
+          </div>
+
+          <div class="tt-bd-row">
+            <span class="tt-bd-name">CPP <span class="tt-rate">11.9% both portions</span>
+              <span class="help" onclick="ttToggleTip(this)">
+                <button type="button" class="help-btn">?</button>
+                <span class="tip">Canada Pension Plan. Self-employed pay both halves — 11.9% total. Calculated on net income between $3,500–$74,600. Source: CRA 2026 rates.</span>
+              </span>
+            </span>
+            <span class="tt-bd-val" id="tt-bd-cpp">—</span>
+          </div>
+
+          <div class="tt-bd-row">
+            <span class="tt-bd-name">Federal Income Tax <span class="tt-rate">14% / 20.5%</span>
+              <span class="help" onclick="ttToggleTip(this)">
+                <button type="button" class="help-btn">?</button>
+                <span class="tip">Federal tax on income above the $16,129 basic personal amount. First $58,523 at 15% (~14% after CPP credit), next bracket at 20.5%. Source: CRA 2026 federal brackets.</span>
+              </span>
+            </span>
+            <span class="tt-bd-val" id="tt-bd-fed">—</span>
+          </div>
+
+          <div class="tt-bd-row">
+            <span class="tt-bd-name">BC Provincial Tax <span class="tt-rate">5.6% / 7.7%</span>
+              <span class="help" onclick="ttToggleTip(this)">
+                <button type="button" class="help-btn">?</button>
+                <span class="tip">BC provincial tax on income above the $11,981 basic personal amount. First $50,363 at ~5.6% net, next bracket at 7.7%. Source: BC 2026 provincial brackets.</span>
+              </span>
+            </span>
+            <span class="tt-bd-val" id="tt-bd-bc">—</span>
+          </div>
+
+          <div class="tt-bd-row total">
+            <span class="tt-bd-name">Total Estimated
+              <span class="help" onclick="ttToggleTip(this)">
+                <button type="button" class="help-btn">?</button>
+                <span class="tip">CPP + federal + BC provincial combined. Your estimated actual tax liability. Consult an accountant for exact figures.</span>
+              </span>
+            </span>
+            <span class="tt-bd-val" id="tt-bd-total">—</span>
+          </div>
+
+          <div class="tt-bd-row saving">
+            <span class="tt-bd-name">Setting aside (25%)
+              <span class="help" onclick="ttToggleTip(this)">
+                <button type="button" class="help-btn">?</button>
+                <span class="tip">25% of gross invoiced income — a conservative rule-of-thumb for self-employed people in Canada to cover CPP + income tax.</span>
+              </span>
+            </span>
+            <span class="tt-bd-val" id="tt-bd-saving">—</span>
+          </div>
+
+          <div class="tt-bd-row diff">
+            <span class="tt-bd-name" style="color:var(--text-secondary)">Surplus / Deficit
+              <span class="help" onclick="ttToggleTip(this)">
+                <button type="button" class="help-btn">?</button>
+                <span class="tip">How much more (surplus) or less (deficit) you're setting aside vs. the estimated tax owing. A surplus means your 25% buffer covers more than needed.</span>
+              </span>
+            </span>
+            <span class="tt-bd-val" id="tt-bd-diff">—</span>
+          </div>
+
+          <div class="tt-bd-note">Expenses reduce net business income, lowering both CPP and income tax. Estimates use basic personal amounts and CPP deductibility. Consult an accountant for exact figures.</div>
+        </div>
+      </div>
+
+      <!-- Right: Invoice Ledger -->
+      <div>
+        <div class="tt-ledger-header">
+          <div class="fi-section-label" style="margin-bottom:0">Invoice Ledger</div>
+          <div class="tt-ledger-count" id="tt-ledger-count"></div>
+        </div>
+
+        <div id="tt-ledger-empty" class="tt-ledger-empty">No invoices yet.</div>
+
+        <div id="tt-ledger-wrap" style="display:none">
+          <table class="tt-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th class="r">Invoice</th>
+                <th class="r">Set Aside</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tt-ledger-body"></tbody>
+          </table>
+          <div class="tt-ledger-totals" id="tt-ledger-totals"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Annual Tax Estimate (folded in from freelance-calculator.html) -->
+    <div class="tt-estimator">
+      <div class="tt-estimator-title">Annual Tax Estimate</div>
+
+      <div class="tt-est-input-row">
+        <label>Estimated annual gross income ($)</label>
+        <input type="number" id="tt-est-income" value="42000" oninput="ttEstCalc()">
+      </div>
+      <div class="tt-est-input-row">
+        <label>Deductible business expenses ($)</label>
+        <input type="number" id="tt-est-deductions" value="2520" oninput="ttEstCalc()">
+      </div>
+
+      <div class="fi-divider"></div>
+
+      <div class="fi-metric-grid" style="margin-bottom:16px">
+        <div class="fi-metric"><div class="fi-metric-label">Net taxable income</div><div class="fi-metric-value" id="tt-est-net">—</div></div>
+        <div class="fi-metric"><div class="fi-metric-label">CPP (~11.9%)</div><div class="fi-metric-value warn" id="tt-est-cpp">—</div></div>
+        <div class="fi-metric"><div class="fi-metric-label">Federal income tax</div><div class="fi-metric-value warn" id="tt-est-fed">—</div></div>
+        <div class="fi-metric"><div class="fi-metric-label">BC provincial tax</div><div class="fi-metric-value warn" id="tt-est-bc">—</div></div>
+        <div class="fi-metric"><div class="fi-metric-label">Total tax + CPP</div><div class="fi-metric-value bad" id="tt-est-total">—</div></div>
+        <div class="fi-metric"><div class="fi-metric-label">Effective rate</div><div class="fi-metric-value" id="tt-est-rate">—</div></div>
+      </div>
+
+      <table class="tt-bracket-table" id="tt-est-bracket-table"></table>
+
+      <div class="tt-est-notice">Estimates only — does not include GST/HST obligations (register once you hit $30k revenue), RRSP deductions, or credits. File quarterly installments if you owe more than $3,000/year. Talk to an accountant.</div>
+    </div>
+
+    <!-- Footer -->
+    <div class="tt-footer-row">
+      <button type="button" class="tt-btn-ghost-danger" onclick="ttConfirmReset()">Clear all data</button>
+    </div>
+
+  </div><!-- /panel-tax-tracker -->
+
+  <!-- ══════════════════════════════════════════════════════
+       QUOTE CALCULATOR
+  ══════════════════════════════════════════════════════ -->
+  <div class="finance-panel" id="panel-quote">
+    <div class="fi-section-label">Shoot Type</div>
+
+    <div class="qc-rate-type-row" id="qc-rate-types">
+      <button class="qc-rt active" data-base="600" data-type="photo_half">Photo — half day</button>
+      <button class="qc-rt" data-base="950" data-type="photo_full">Photo — full day</button>
+      <button class="qc-rt" data-base="750" data-type="video_half">Video — half day</button>
+      <button class="qc-rt" data-base="1200" data-type="video_full">Video — full day</button>
+      <button class="qc-rt" data-base="1800" data-type="event">Event coverage</button>
+      <button class="qc-rt" data-base="400" data-type="edit">Edit only</button>
+    </div>
+
+    <div class="qc-slider-row">
+      <label>Base day rate ($)</label>
+      <input type="range" id="qc-baseRate" min="200" max="3000" step="25" value="600">
+      <span class="val" id="qc-baseRateVal">$600</span>
+    </div>
+    <div class="qc-slider-row">
+      <label>Travel / mileage ($)</label>
+      <input type="range" id="qc-travel" min="0" max="500" step="10" value="0">
+      <span class="val" id="qc-travelVal">$0</span>
+    </div>
+    <div class="qc-slider-row">
+      <label>Gear rental / kit fee ($)</label>
+      <input type="range" id="qc-gear" min="0" max="500" step="10" value="0">
+      <span class="val" id="qc-gearVal">$0</span>
+    </div>
+    <div class="qc-slider-row">
+      <label>Rush fee %</label>
+      <input type="range" id="qc-rush" min="0" max="50" step="5" value="0">
+      <span class="val" id="qc-rushVal">0%</span>
+    </div>
+    <div class="qc-slider-row">
+      <label>Licensing / usage fee ($)</label>
+      <input type="range" id="qc-license" min="0" max="1000" step="25" value="0">
+      <span class="val" id="qc-licenseVal">$0</span>
+    </div>
+
+    <div class="fi-divider"></div>
+
+    <div class="fi-metric-grid">
+      <div class="fi-metric"><div class="fi-metric-label">Quote to client</div><div class="fi-metric-value" id="qc-quoteTotal">$600</div></div>
+      <div class="fi-metric"><div class="fi-metric-label">After platform fees (~3%)</div><div class="fi-metric-value" id="qc-afterFees">$582</div></div>
+      <div class="fi-metric"><div class="fi-metric-label">Take-home (after ~30% tax)</div><div class="fi-metric-value good" id="qc-takeHome">$407</div></div>
+      <div class="fi-metric"><div class="fi-metric-label">Hourly equivalent (8hr)</div><div class="fi-metric-value" id="qc-hourly">$75/hr</div></div>
+    </div>
+  </div><!-- /panel-quote -->
+
+  <!-- ══════════════════════════════════════════════════════
+       BUDGET CALCULATOR
+  ══════════════════════════════════════════════════════ -->
+  <div class="finance-panel" id="panel-budget">
+
+    <div class="bgt-cat-label" style="margin-top:0">Income</div>
+    <div class="bgt-row"><span>Photography / videography income</span><input type="number" id="bgt-income" value="3500" min="0"></div>
+    <div class="bgt-row"><span>Other income (tips, misc)</span><input type="number" id="bgt-other-income" value="0" min="0"></div>
+
+    <div class="bgt-cat-label">Living expenses</div>
+    <div class="bgt-row"><span>Rent</span><input type="number" id="bgt-rent" value="1400" min="0"></div>
+    <div class="bgt-row"><span>Utilities (hydro, internet, phone)</span><input type="number" id="bgt-utilities" value="200" min="0"></div>
+    <div class="bgt-row"><span>Groceries</span><input type="number" id="bgt-food" value="400" min="0"></div>
+    <div class="bgt-row"><span>Transport / gas</span><input type="number" id="bgt-transport" value="150" min="0"></div>
+    <div class="bgt-row"><span>Personal / misc</span><input type="number" id="bgt-personal" value="200" min="0"></div>
+
+    <div class="bgt-cat-label">Business expenses (deductible)</div>
+    <div class="bgt-row"><span>Gear insurance / maintenance</span><input type="number" id="bgt-gear" value="80" min="0"></div>
+    <div class="bgt-row"><span>Software (Adobe, LR, QBO, etc.)</span><input type="number" id="bgt-software" value="60" min="0"></div>
+    <div class="bgt-row"><span>Website / domain / hosting</span><input type="number" id="bgt-web" value="20" min="0"></div>
+    <div class="bgt-row"><span>Marketing / portfolio costs</span><input type="number" id="bgt-marketing" value="50" min="0"></div>
+    <div class="bgt-row"><span>Other business expenses</span><input type="number" id="bgt-biz-other" value="0" min="0"></div>
+
+    <div class="bgt-cat-label">Set aside (auto-calculated)</div>
+    <div class="bgt-row"><span>Tax savings (~30% of net income)</span><input type="number" id="bgt-tax" value="0" min="0" readonly></div>
+
+    <div class="fi-divider"></div>
+
+    <div class="fi-metric-grid">
+      <div class="fi-metric"><div class="fi-metric-label">Total income</div><div class="fi-metric-value" id="bgt-m-income">$3,500</div></div>
+      <div class="fi-metric"><div class="fi-metric-label">Total expenses</div><div class="fi-metric-value" id="bgt-m-expenses">—</div></div>
+      <div class="fi-metric"><div class="fi-metric-label">Tax to set aside</div><div class="fi-metric-value warn" id="bgt-m-tax">$0</div></div>
+      <div class="fi-metric"><div class="fi-metric-label">Net after tax savings</div><div class="fi-metric-value good" id="bgt-m-net">—</div></div>
+    </div>
+
+    <div class="bgt-bar-wrap">
+      <div class="bgt-bar-bg"><div class="bgt-bar-fill" id="bgt-bar" style="background:var(--accent);width:50%"></div></div>
+      <div class="bgt-bar-label"><span id="bgt-bar-left">Surplus</span><span id="bgt-bar-right">—</span></div>
+    </div>
+
+    <div class="bgt-notice">Tax field auto-calculates at 30% of net income. Deductible business expenses reduce your taxable income. Keep receipts for everything in the "Business expenses" section — QuickBooks categories: Advertising, Software, Professional Fees, Vehicle.</div>
+
+  </div><!-- /panel-budget -->
+
+  <!-- ══════════════════════════════════════════════════════
+       CASH FLOW CALCULATOR
+  ══════════════════════════════════════════════════════ -->
+  <div class="finance-panel" id="panel-cashflow">
+    <!-- Built entirely by cfInit() / cfRender() in finance.js -->
+    <div id="cf-root"></div>
+  </div><!-- /panel-cashflow -->
+
+</div><!-- /finance-section -->
+
+<!-- ── Finance Toast (fixed, shared) ───────────────────────── -->
+<div class="fi-toast" id="fi-toast"></div>
+
+<!-- ── Confirm Modal (Tax Tracker clear) ───────────────────── -->
+<div class="fi-overlay" id="tt-modal">
+  <div class="fi-modal">
+    <h3>Clear all data?</h3>
+    <p>All invoices and your Wealthsimple balance will be permanently deleted from localStorage.</p>
+    <div class="fi-modal-btns">
+      <button type="button" class="fi-modal-btn cancel" onclick="ttCloseModal()">Cancel</button>
+      <button type="button" class="fi-modal-btn confirm" onclick="ttDoReset()">Clear everything</button>
+    </div>
+  </div>
 </div>
