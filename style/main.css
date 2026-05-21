@@ -1,0 +1,231 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Anybody:wght@700;800&display=swap');
+
+/* ─── Design Tokens ─────────────────────────────────────── */
+:root {
+  --bg-darkest:      #0f1a0f;
+  --bg-dark:         #141f14;
+  --bg-panel:        #1a2a1a;
+  --bg-surface:      #1f321f;
+  --bg-surface-hover:#263d26;
+  --accent:          #5a9c5a;
+  --accent-bright:   #7dc27d;
+  --accent-dim:      #3a6e3a;
+  --text-primary:    #f0f0ec;
+  --text-secondary:  #9aad9a;
+  --text-muted:      #5e7a5e;
+  --border:          #2a3d2a;
+  --border-light:    #334d33;
+  --danger:          #d45c5c;
+  --warning:         #c9923a;
+  --success:         #5a9c5a;
+
+  --font-body:    'Be Vietnam Pro', system-ui, sans-serif;
+  --font-display: 'Anybody', system-ui, sans-serif;
+
+  --text-xs:   0.75rem;
+  --text-sm:   0.875rem;
+  --text-base: 1rem;
+  --text-lg:   1.125rem;
+  --text-xl:   1.375rem;
+  --text-2xl:  1.75rem;
+  --text-3xl:  2.25rem;
+}
+
+/* ─── Reset ─────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg-darkest);
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ─── Auth Gate ──────────────────────────────────────────── */
+#auth-gate {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 26, 15, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.auth-modal {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.auth-logo {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--accent-bright);
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
+}
+
+.auth-subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-bottom: 28px;
+}
+
+.auth-modal label {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.auth-modal input[type="password"] {
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  padding: 10px 14px;
+  font-size: var(--text-base);
+  font-family: var(--font-body);
+  outline: none;
+  margin-bottom: 14px;
+  transition: border-color 0.15s;
+}
+
+.auth-modal input[type="password"]:focus {
+  border-color: var(--accent);
+}
+
+.auth-remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.auth-remember input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+.auth-error {
+  font-size: var(--text-sm);
+  color: var(--danger);
+  margin-bottom: 12px;
+  min-height: 20px;
+}
+
+/* ─── App Shell Layout ───────────────────────────────────── */
+#app {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#content {
+  flex: 1;
+  background: var(--bg-dark);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+#section-panel {
+  flex: 1;
+  padding: 32px;
+}
+
+/* ─── Section Placeholder ────────────────────────────────── */
+.section-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  text-align: center;
+  gap: 12px;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.section-subtitle {
+  font-size: var(--text-base);
+  color: var(--text-muted);
+}
+
+/* ─── Mobile ─────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  #app {
+    flex-direction: column;
+  }
+
+  #sidebar {
+    width: 100% !important;
+    height: 56px;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    order: 2;
+    border-top: 1px solid var(--border);
+    border-right: none !important;
+  }
+
+  #sidebar .nav-items {
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-around;
+    padding: 0;
+    gap: 0;
+  }
+
+  #content {
+    order: 1;
+    height: calc(100vh - 56px);
+  }
+
+  #section-panel {
+    padding: 20px 16px;
+  }
+}
