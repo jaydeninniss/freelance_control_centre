@@ -558,7 +558,7 @@ function crmShowToast(msg) {
 
 // ── Utility ───────────────────────────────────────────────────
 
-const initCrm = initCRM; // router calls initCrm() (title-case first letter)
+window.initCrm = initCRM;
 
 function crmEsc(str) {
   return String(str)
