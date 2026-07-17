@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function revealApp() {
     authGate.style.display = 'none';
     app.style.display = 'flex';
+    initSidebarReorder();
     initRouter();
     const startSection = window.location.hash.replace('#', '') || 'home';
     navigate(startSection);
@@ -74,6 +75,98 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Sidebar nav ───────────────────────────────────────────
   document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', () => navigate(btn.dataset.section));
+    btn.addEventListener('click', () => {
+      if (document.getElementById('sidebar').classList.contains('reorder-mode')) return;
+      navigate(btn.dataset.section);
+    });
   });
 });
+
+// ── Sidebar Reorder ────────────────────────────────────────
+function initSidebarReorder() {
+  const sidebar  = document.getElementById('sidebar');
+  const navItems = sidebar.querySelector('.nav-items');
+  const toggle   = document.getElementById('sidebar-reorder-toggle');
+
+  // Restore saved order
+  const saved = localStorage.getItem('fcc_nav_order');
+  if (saved) {
+    try {
+      const order = JSON.parse(saved);
+      const btns  = [...navItems.querySelectorAll('.nav-btn')];
+      const known = new Set(order);
+      const ordered = order.map(s => btns.find(b => b.dataset.section === s)).filter(Boolean);
+      btns.filter(b => !known.has(b.dataset.section)).forEach(b => ordered.push(b));
+      ordered.forEach(b => navItems.appendChild(b));
+    } catch (_) {}
+  }
+
+  let reorderMode = false;
+
+  function saveOrder() {
+    const order = [...navItems.querySelectorAll('.nav-btn')].map(b => b.dataset.section);
+    localStorage.setItem('fcc_nav_order', JSON.stringify(order));
+  }
+
+  function setDraggable(enabled) {
+    navItems.querySelectorAll('.nav-btn').forEach(b => { b.draggable = enabled; });
+  }
+
+  toggle.addEventListener('click', () => {
+    reorderMode = !reorderMode;
+    sidebar.classList.toggle('reorder-mode', reorderMode);
+    toggle.title = reorderMode ? 'Done reordering' : 'Reorder tabs';
+    setDraggable(reorderMode);
+  });
+
+  let dragSrc = null;
+
+  navItems.addEventListener('dragstart', e => {
+    dragSrc = e.target.closest('.nav-btn');
+    if (dragSrc) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', dragSrc.dataset.section);
+      setTimeout(() => dragSrc.classList.add('dragging'), 0);
+    }
+  });
+
+  navItems.addEventListener('dragend', () => {
+    navItems.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('dragging', 'drag-over'));
+    dragSrc = null;
+  });
+
+  navItems.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const over = e.target.closest('.nav-btn');
+    if (over && over !== dragSrc) {
+      navItems.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('drag-over'));
+      over.classList.add('drag-over');
+    }
+  });
+
+  navItems.addEventListener('dragleave', e => {
+    if (!navItems.contains(e.relatedTarget)) {
+      navItems.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('drag-over'));
+    }
+  });
+
+  navItems.addEventListener('drop', e => {
+    e.preventDefault();
+    const over = e.target.closest('.nav-btn');
+    if (!over || !dragSrc || over === dragSrc) return;
+
+    const btns = [...navItems.querySelectorAll('.nav-btn')];
+    const fromIdx = btns.indexOf(dragSrc);
+    const toIdx   = btns.indexOf(over);
+
+    if (fromIdx < toIdx) {
+      over.after(dragSrc);
+    } else {
+      over.before(dragSrc);
+    }
+
+    navItems.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('drag-over'));
+    saveOrder();
+  });
+}

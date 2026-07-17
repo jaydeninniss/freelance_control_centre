@@ -1,4 +1,86 @@
-<div class="section-placeholder">
-  <h2 class="section-title">Projects</h2>
-  <p class="section-subtitle">This section is coming in a future phase.</p>
+<div class="proj-section">
+
+  <!-- ── Top Bar ─────────────────────────────────────────────── -->
+  <div class="proj-top-bar">
+    <button class="btn-primary" id="proj-new-btn" onclick="projOpenNew()">+ New Project</button>
+  </div>
+
+  <!-- ── List View ───────────────────────────────────────────── -->
+  <div id="proj-list-view" class="proj-list-view">
+
+    <div class="proj-list-panel" id="proj-list-panel">
+
+      <div class="proj-filter-bar">
+        <div class="proj-search-wrap">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="search" id="proj-search" class="proj-search-input" placeholder="Search…" autocomplete="off" oninput="projFilterList()">
+        </div>
+        <div class="proj-filter-selects">
+          <select id="proj-filter-status" class="proj-filter-select" onchange="projFilterList()">
+            <option value="">All status</option>
+            <option value="onboarding">Onboarding</option>
+            <option value="pre-production">Pre-production</option>
+            <option value="production">Production</option>
+            <option value="post">Post</option>
+            <option value="retro">Retro</option>
+          </select>
+          <select id="proj-filter-type" class="proj-filter-select" onchange="projFilterList()">
+            <option value="">All types</option>
+            <option value="photo">Photo</option>
+            <option value="video">Video</option>
+            <option value="broadcast">Broadcast</option>
+          </select>
+          <select id="proj-sort-mode" class="proj-filter-select" onchange="projSetSortMode(this.value)">
+            <option value="recent">Recent</option>
+            <option value="manual">Manual</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="proj-list" id="proj-list"></div>
+      <div class="proj-archived-section" id="proj-archived-section"></div>
+
+    </div>
+
+    <!-- Detail Panel -->
+    <div class="proj-detail-panel" id="proj-detail-panel">
+      <div class="proj-detail-empty" id="proj-detail-empty">
+        <svg viewBox="0 0 24 24" width="40" height="40">
+          <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+        </svg>
+        <p>Select a project to view details</p>
+      </div>
+      <div class="proj-detail-content" id="proj-detail-content" style="display:none"></div>
+    </div>
+
+  </div>
+
+  <!-- ── Modal ───────────────────────────────────────────────── -->
+  <div class="proj-modal-overlay" id="proj-modal-overlay" style="display:none">
+    <div class="proj-modal">
+      <h3 id="proj-modal-title">Are you sure?</h3>
+      <p id="proj-modal-msg"></p>
+      <div id="proj-modal-confirm-wrap" style="display:none">
+        <input type="text" id="proj-modal-confirm-input" class="proj-modal-confirm-input" autocomplete="off">
+      </div>
+      <div class="proj-modal-btns">
+        <button class="btn-ghost"  onclick="projModalCancel()">Cancel</button>
+        <button class="btn-danger" id="proj-modal-confirm-btn" onclick="projModalConfirm()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Toast ───────────────────────────────────────────────── -->
+  <div class="fi-toast" id="proj-toast"></div>
+
 </div>
+
+<!-- ── Board Task Detail (fixed overlay) ───────────────────── -->
+<div class="tk-detail-panel" id="projb-detail" aria-label="Task detail">
+  <div class="tk-detail-header">
+    <span class="tk-detail-header-label" id="projb-detail-label">New Task</span>
+    <button class="tk-detail-close" onclick="projBCloseDetail()" aria-label="Close">✕</button>
+  </div>
+  <div class="tk-detail-body" id="projb-detail-body"></div>
+</div>
+<div class="tk-backdrop" id="projb-backdrop" onclick="projBCloseDetail()"></div>

@@ -1,23 +1,22 @@
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Anybody:wght@700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Anybody:wght@700;800&display=swap');
 
 /* ─── Design Tokens ─────────────────────────────────────── */
 :root {
-  --bg-darkest:      #0f1a0f;
-  --bg-dark:         #141f14;
-  --bg-panel:        #1a2a1a;
-  --bg-surface:      #1f321f;
-  --bg-surface-hover:#263d26;
-  --accent:          #5a9c5a;
-  --accent-bright:   #7dc27d;
-  --accent-dim:      #3a6e3a;
-  --text-primary:    #f0f0ec;
-  --text-secondary:  #9aad9a;
-  --text-muted:      #5e7a5e;
-  --border:          #2a3d2a;
-  --border-light:    #334d33;
-  --danger:          #d45c5c;
-  --warning:         #c9923a;
-  --success:         #5a9c5a;
+  --bg-darkest:       #121212;
+  --bg-dark:          #181818;
+  --bg-panel:         #1f1f1f;
+  --bg-surface:       #262626;
+  --bg-surface-hover: #2f2f2f;
+  --accent:           #266926;
+  --accent-bright:    #3d8c3d;
+  --accent-dim:       #1a4a1a;
+  --text-primary:     #f2f2f0;
+  --text-secondary:   #c0c0bc;
+  --text-muted:       #909090;
+  --border:           #363636;
+  --border-light:     #454545;
+  --danger:           #d45c5c;
+  --warning:          #c9923a;
 
   --font-body:    'Be Vietnam Pro', system-ui, sans-serif;
   --font-display: 'Anybody', system-ui, sans-serif;
@@ -65,7 +64,7 @@ a {
 #auth-gate {
   position: fixed;
   inset: 0;
-  background: rgba(15, 26, 15, 0.92);
+  background: rgba(18, 18, 18, 0.92);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -161,6 +160,9 @@ a {
 #content {
   flex: 1;
   background: var(--bg-dark);
+  background-image: url('/assets/topo-pattern.svg');
+  background-size: 400px;
+  background-repeat: repeat;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -168,7 +170,7 @@ a {
 
 #section-panel {
   flex: 1;
-  padding: 32px;
+  padding: 20px 24px;
 }
 
 /* ─── Section Placeholder ────────────────────────────────── */

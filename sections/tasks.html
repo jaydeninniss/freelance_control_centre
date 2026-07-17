@@ -1,14 +1,11 @@
 <div class="tasks-section">
 
-  <!-- ── Filter Bar ─────────────────────────────────────── -->
-  <div class="tk-filter-bar">
+  <!-- ── Sticky Filter Bar ──────────────────────────────────── -->
+  <div class="tk-filter-bar" id="tk-filter-bar">
     <div class="tk-search-wrap">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
       <input class="tk-search-input" id="tk-search" type="search" placeholder="Search tasks…" autocomplete="off">
     </div>
-    <select class="tk-filter-select" id="tk-filter-project">
-      <option value="">All projects</option>
-    </select>
     <select class="tk-filter-select" id="tk-filter-label">
       <option value="">All labels</option>
     </select>
@@ -20,31 +17,42 @@
     </select>
   </div>
 
-  <!-- ── Loading ────────────────────────────────────────── -->
-  <div class="tk-loading" id="tk-loading">
-    <div class="tk-spinner"></div>
-    <span>Loading board…</span>
+  <!-- ── Bulk Action Bar (visible when tasks are selected) ──── -->
+  <div class="tk-bulk-bar" id="tk-bulk-bar" style="display:none">
+    <span class="tk-bulk-count" id="tk-bulk-count">0 selected</span>
+    <div class="tk-bulk-actions">
+      <select class="tk-bulk-select" id="tk-bulk-board" onchange="tkBulkUpdateColOptions()">
+        <option value="">Assign to board…</option>
+        <option value="__general__">General</option>
+      </select>
+      <select class="tk-bulk-select" id="tk-bulk-col">
+        <option value="">Move to column…</option>
+      </select>
+      <button class="btn-primary tk-bulk-apply-btn" onclick="tkBulkApply()">Apply</button>
+      <button class="btn-danger"  onclick="tkBulkDelete()">Delete</button>
+      <button class="btn-ghost"   onclick="tkClearSelection()">✕ Clear</button>
+    </div>
   </div>
 
-  <!-- ── Board ──────────────────────────────────────────── -->
-  <div class="tk-board-wrap" id="tk-board-wrap" style="display:none">
-    <div class="tk-board" id="tk-board"></div>
+  <!-- ── Loading ────────────────────────────────────────────── -->
+  <div class="tk-loading" id="tk-loading">
+    <div class="tk-spinner"></div>
+    <span>Loading boards…</span>
   </div>
+
+  <!-- ── All Boards (stacked vertically) ───────────────────── -->
+  <div class="tk-boards-container" id="tk-boards-container" style="display:none"></div>
 
 </div>
 
-<!-- ── Detail Panel (fixed overlay) ────────────────────────── -->
+<!-- ── Task Detail Panel (fixed overlay) ────────────────────── -->
 <div class="tk-detail-panel" id="tk-detail" aria-label="Task detail">
   <div class="tk-detail-header">
     <span class="tk-detail-header-label" id="tk-detail-header-label">New Task</span>
     <button class="tk-detail-close" onclick="tkCloseDetail()" aria-label="Close">✕</button>
   </div>
-  <div class="tk-detail-body" id="tk-detail-body">
-    <!-- Populated by tkOpenDetail() -->
-  </div>
+  <div class="tk-detail-body" id="tk-detail-body"></div>
 </div>
-
-<!-- ── Backdrop ─────────────────────────────────────────────── -->
 <div class="tk-backdrop" id="tk-backdrop" onclick="tkCloseDetail()"></div>
 
 <!-- ── Confirm Modal ─────────────────────────────────────────── -->
@@ -53,8 +61,8 @@
     <h3 id="tk-modal-title">Are you sure?</h3>
     <p id="tk-modal-msg"></p>
     <div class="tk-modal-btns">
-      <button class="fi-modal-btn cancel" onclick="tkModalCancel()">Cancel</button>
-      <button class="fi-modal-btn confirm" id="tk-modal-confirm-btn" onclick="tkModalConfirm()">Confirm</button>
+      <button class="fi-modal-btn cancel"  onclick="tkModalCancel()">Cancel</button>
+      <button class="fi-modal-btn confirm" onclick="tkModalConfirm()">Confirm</button>
     </div>
   </div>
 </div>

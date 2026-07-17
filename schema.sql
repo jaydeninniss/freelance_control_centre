@@ -6,6 +6,7 @@ USE fcc;
 
 CREATE TABLE IF NOT EXISTS fcc_task_columns (
   id          VARCHAR(64)  PRIMARY KEY,
+  project_id  VARCHAR(64)  DEFAULT NULL,  -- NULL = General board; project UUID = project board
   name        VARCHAR(255) NOT NULL,
   color       VARCHAR(20),
   position    INT          DEFAULT 0,
@@ -28,13 +29,16 @@ CREATE TABLE IF NOT EXISTS fcc_tasks (
 );
 
 CREATE TABLE IF NOT EXISTS fcc_projects (
-  id          VARCHAR(64)  PRIMARY KEY,
-  title       VARCHAR(255),
-  name        VARCHAR(255),
-  status      VARCHAR(50),
-  notes       TEXT,
-  created_at  VARCHAR(64),
-  updated_at  VARCHAR(64)
+  id             VARCHAR(64)  PRIMARY KEY,
+  title          VARCHAR(255),
+  status         VARCHAR(50),
+  board_position INT          DEFAULT 0,  -- manual order of project boards in Tasks tab
+  type           VARCHAR(50),
+  start_date     VARCHAR(20),
+  end_date       VARCHAR(20),
+  notes          TEXT,
+  created_at     VARCHAR(64),
+  updated_at     VARCHAR(64)
 );
 
 CREATE TABLE IF NOT EXISTS fcc_clients (

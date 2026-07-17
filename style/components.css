@@ -178,6 +178,13 @@
   background: rgba(212, 92, 92, 0.12);
 }
 
+.btn-danger:disabled,
+.btn-ghost:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* ─── Card ───────────────────────────────────────────────── */
 
 .card {
@@ -226,7 +233,7 @@ input[type="url"]:focus,
 textarea:focus,
 select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(90, 156, 90, 0.15);
+  box-shadow: 0 0 0 3px rgba(38, 105, 38, 0.25);
 }
 
 textarea {
@@ -235,7 +242,7 @@ textarea {
 }
 
 select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235e7a5e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23737373' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
   padding-right: 30px;
@@ -246,3 +253,260 @@ select option {
   background: var(--bg-surface);
   color: var(--text-primary);
 }
+
+/* ─── Two-Panel Layout (CRM & Projects) ──────────────────── */
+
+.crm-list-panel,
+.proj-list-panel {
+  width: 300px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  overflow: hidden;
+}
+
+.crm-detail-panel,
+.proj-detail-panel {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-dark);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.crm-detail-empty,
+.proj-detail-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  padding: 32px;
+}
+
+.crm-detail-empty svg,
+.proj-detail-empty svg {
+  stroke: var(--text-muted);
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.4;
+}
+
+.crm-back-btn,
+.proj-back-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  padding: 4px 2px;
+  display: none;
+  flex-shrink: 0;
+}
+
+.crm-back-btn:hover,
+.proj-back-btn:hover {
+  color: var(--text-primary);
+}
+
+.crm-detail-header,
+.proj-detail-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.crm-detail-footer,
+.proj-detail-footer {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding-top: 4px;
+}
+
+/* ─── Shared Field Group ─────────────────────────────────── */
+
+.crm-field-group,
+.proj-field-group {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.crm-field-group .field-row,
+.proj-field-group .field-row {
+  border-radius: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.crm-field-group .field-row:last-child,
+.proj-field-group .field-row:last-child {
+  border-bottom: none;
+}
+
+.crm-empty-val,
+.proj-empty-val {
+  color: var(--text-muted);
+}
+
+/* ─── Shared Section Label ───────────────────────────────── */
+
+.crm-section-label,
+.proj-section-label {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* ─── Shared Notes ───────────────────────────────────────── */
+
+.crm-notes-wrap,
+.proj-notes-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.crm-notes-textarea,
+.proj-notes-textarea {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  padding: 10px 12px;
+  outline: none;
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+
+.crm-notes-textarea:focus,
+.proj-notes-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(38, 105, 38, 0.25);
+}
+
+/* ─── Shared New-Entry Form ──────────────────────────────── */
+
+.crm-new-fields,
+.proj-new-fields {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.crm-new-field,
+.proj-new-field {
+  padding: 10px 16px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.crm-new-field:last-child,
+.proj-new-field:last-child {
+  border-bottom: none;
+}
+
+.crm-new-input,
+.proj-new-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  padding: 2px 0;
+  width: 100%;
+}
+
+.crm-new-input::placeholder,
+.proj-new-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* ─── Shared Confirm Modal ───────────────────────────────── */
+
+.crm-modal-overlay,
+.proj-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.crm-modal,
+.proj-modal {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 28px 24px;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 16px;
+}
+
+.crm-modal h3,
+.proj-modal h3 {
+  font-size: var(--text-lg);
+  color: var(--text-primary);
+}
+
+.crm-modal p,
+.proj-modal p {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.crm-modal-btns,
+.proj-modal-btns {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+/* ─── Toast (Finance + Tasks) ────────────────────────────── */
+
+.fi-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(60px);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: 99px;
+  padding: 8px 20px;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  z-index: 999;
+  opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.25s;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.fi-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }

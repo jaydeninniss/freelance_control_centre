@@ -49,7 +49,16 @@ async function initCRM() {
     crmSeedCollaborators();
   }
 
-  crmSwitchTab('clients');
+  if (window.__openCrmPersonId) {
+    const personId   = window.__openCrmPersonId;
+    const personKind = window.__openCrmPersonKind || 'clients';
+    window.__openCrmPersonId   = null;
+    window.__openCrmPersonKind = null;
+    crmSwitchTab(personKind);
+    crmSelectContact(personId);
+  } else {
+    crmSwitchTab('clients');
+  }
 }
 
 // ── Seed helpers (first run only) ────────────────────────────
@@ -286,6 +295,23 @@ function crmFmtVal(key, val) {
   return crmEsc(val);
 }
 
+const _CRM_STATUS_LABELS = {
+  'onboarding': 'Onboarding', 'pre-production': 'Pre-production',
+  'production': 'Production', 'post': 'Post', 'retro': 'Retro',
+};
+const _CRM_TYPE_LABELS = { 'photo': 'Photo', 'video': 'Video', 'broadcast': 'Broadcast' };
+
+function crmFmtShortDate(dateStr) {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function crmOpenProject(projectId) {
+  window.__openProjectId = projectId;
+  navigate('projects');
+}
+
 function crmLinkedProjectsHtml(contactId) {
   const jrows  = CRM.tab === 'clients'
     ? CRM.projectClients.filter(j => j.client_id === contactId)
@@ -301,11 +327,26 @@ function crmLinkedProjectsHtml(contactId) {
 
   return `<div class="crm-linked-projects">
     <div class="crm-section-label">Linked Projects</div>
-    <div class="crm-project-chips">
-      ${linked.map(p => `<div class="crm-project-chip">
-        <span>${crmEsc(p.name || p.title || 'Unnamed Project')}</span>
-        ${p.status ? `<span class="badge">${crmEsc(p.status)}</span>` : ''}
-      </div>`).join('')}
+    <div class="crm-project-cards">
+      ${linked.map(p => {
+        const statusLabel = _CRM_STATUS_LABELS[p.status] || '';
+        const typeLabel   = _CRM_TYPE_LABELS[p.type]     || '';
+        let dateStr = '';
+        if (p.start_date && p.end_date) dateStr = `${crmFmtShortDate(p.start_date)} – ${crmFmtShortDate(p.end_date)}`;
+        else if (p.start_date)          dateStr = crmFmtShortDate(p.start_date);
+        else if (p.end_date)            dateStr = crmFmtShortDate(p.end_date);
+        return `<div class="crm-project-card crm-project-card--link" onclick="crmOpenProject('${p.id}')">
+          <div class="crm-project-card-top">
+            <span class="crm-project-card-title">${crmEsc(p.title || p.name || 'Untitled')}</span>
+            <span class="crm-project-open-arrow">→</span>
+          </div>
+          <div class="crm-project-card-meta">
+            ${statusLabel ? `<span class="crm-proj-status crm-proj-status-${p.status}">${crmEsc(statusLabel)}</span>` : ''}
+            ${typeLabel   ? `<span class="crm-proj-type">${crmEsc(typeLabel)}</span>` : ''}
+            ${dateStr     ? `<span class="crm-proj-date">${crmEsc(dateStr)}</span>`   : ''}
+          </div>
+        </div>`;
+      }).join('')}
     </div>
   </div>`;
 }
