@@ -1,4 +1,5 @@
 config.js
+api/config.php
 password-hash-helper.html
 .DS_Store
 node_modules/

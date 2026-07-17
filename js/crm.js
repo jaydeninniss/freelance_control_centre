@@ -3,6 +3,12 @@ const CRM = {
   selectedId: null,
   mode: null,
   search: '',
+  // in-memory data — PHP/MySQL is source of truth, no localStorage
+  clients: [],
+  collaborators: [],
+  projects: [],
+  projectClients: [],
+  projectCollaborators: [],
 };
 
 let _crmModalCallback = null;
@@ -13,41 +19,73 @@ const CRM_KEYS = {
   collaborators: 'fcc_collaborators',
 };
 
-// ── Init ──────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────
 
-function initCRM() {
+function crmLoad() {
+  CRM.clients              = DB.getAll('fcc_clients');
+  CRM.collaborators        = DB.getAll('fcc_collaborators');
+  CRM.projects             = DB.getAll('fcc_projects');
+  CRM.projectClients       = DB.getAll('fcc_project_clients');
+  CRM.projectCollaborators = DB.getAll('fcc_project_collaborators');
+}
+
+async function initCRM() {
   CRM.tab        = 'clients';
   CRM.selectedId = null;
   CRM.mode       = null;
   CRM.search     = '';
 
-  const searchEl = document.getElementById('crm-search');
-  if (searchEl) searchEl.value = '';
+  await DB.hydrate([
+    'fcc_clients', 'fcc_collaborators',
+    'fcc_projects', 'fcc_project_clients', 'fcc_project_collaborators',
+  ]);
+  crmLoad();
 
-  crmSeedIfEmpty();
+  if (CRM.clients.length === 0) {
+    crmSeedClients();
+    crmLoad();
+  }
+  if (CRM.collaborators.length === 0) {
+    crmSeedCollaborators();
+  }
+
   crmSwitchTab('clients');
 }
 
-function crmSeedIfEmpty() {
+// ── Seed helpers (first run only) ────────────────────────────
+
+function crmSeedClients() {
   const today = new Date();
   const sub = d => { const dt = new Date(today); dt.setDate(dt.getDate() - d); return dt.toISOString().slice(0, 10); };
   const add = d => { const dt = new Date(today); dt.setDate(dt.getDate() + d); return dt.toISOString().slice(0, 10); };
 
-  if (DB.getAll('fcc_clients').length === 0) {
-    DB.insert('fcc_clients', { name: 'Sarah Chen', email: 'sarah@chenmedia.ca', phone: '604-555-0142', company: 'Chen Media', type: 'client', notes: 'Prefers communication via email. Interested in quarterly brand shoots.', last_contacted: sub(18), follow_up_date: add(5) });
-    DB.insert('fcc_clients', { name: 'Mike Rodriguez', email: 'mike@elegantevents.ca', phone: '778-555-0287', company: 'Elegant Events', type: 'client', notes: 'Wedding season keeps him busy May–September. Best to book early.', last_contacted: sub(65), follow_up_date: sub(2) });
-    DB.insert('fcc_clients', { name: 'Priya Kapoor', email: 'priya.kapoor@horizoncorp.com', phone: '604-555-0391', company: 'Horizon Corp', type: 'client', notes: 'Corporate headshots + annual report photography. Budget is generous.', last_contacted: sub(40), follow_up_date: add(14) });
-    DB.insert('fcc_clients', { name: 'James Whitfield', email: 'j.whitfield@gmail.com', phone: '250-555-0088', company: '', type: 'client', notes: 'Personal family portrait client. Referred by Sarah Chen.', last_contacted: sub(8), follow_up_date: null });
-  }
-
-  if (DB.getAll('fcc_collaborators').length === 0) {
-    DB.insert('fcc_collaborators', { name: 'Alex Thompson', email: 'alex.t.sound@gmail.com', phone: '604-555-0214', role: 'Sound Engineer', notes: 'Freelance. Works weekends. Has his own gear for small events.', last_contacted: sub(12), follow_up_date: null });
-    DB.insert('fcc_collaborators', { name: 'Jordan Lee', email: 'jordanlee.photo@gmail.com', phone: '778-555-0365', role: 'Photo Assistant', notes: 'Available for day shoots. Learning second shooter role.', last_contacted: sub(35), follow_up_date: add(3) });
-    DB.insert('fcc_collaborators', { name: 'Sam Wilson', email: 'sam@wilsondrones.ca', phone: '604-555-0502', role: 'Drone Operator', notes: 'Licensed AdvROC. Essential for landscape and real estate work.', last_contacted: sub(75), follow_up_date: sub(5) });
-  }
+  [
+    { name: 'Sarah Chen',     email: 'sarah@chenmedia.ca',          phone: '604-555-0142', company: 'Chen Media',      type: 'client', notes: 'Prefers communication via email. Interested in quarterly brand shoots.', last_contacted: sub(18), follow_up_date: add(5)  },
+    { name: 'Mike Rodriguez', email: 'mike@elegantevents.ca',        phone: '778-555-0287', company: 'Elegant Events',  type: 'client', notes: 'Wedding season keeps him busy May–September. Best to book early.',        last_contacted: sub(65), follow_up_date: sub(2)  },
+    { name: 'Priya Kapoor',   email: 'priya.kapoor@horizoncorp.com', phone: '604-555-0391', company: 'Horizon Corp',    type: 'client', notes: 'Corporate headshots + annual report photography. Budget is generous.',     last_contacted: sub(40), follow_up_date: add(14) },
+    { name: 'James Whitfield',email: 'j.whitfield@gmail.com',        phone: '250-555-0088', company: '',                type: 'client', notes: 'Personal family portrait client. Referred by Sarah Chen.',                 last_contacted: sub(8),  follow_up_date: null    },
+  ].forEach(s => {
+    const r = DB.insert('fcc_clients', s);
+    if (r) CRM.clients.push(r);
+  });
 }
 
-// ── Warning helpers ───────────────────────────────────────
+function crmSeedCollaborators() {
+  const today = new Date();
+  const sub = d => { const dt = new Date(today); dt.setDate(dt.getDate() - d); return dt.toISOString().slice(0, 10); };
+  const add = d => { const dt = new Date(today); dt.setDate(dt.getDate() + d); return dt.toISOString().slice(0, 10); };
+
+  [
+    { name: 'Alex Thompson', email: 'alex.t.sound@gmail.com',   phone: '604-555-0214', role: 'Sound Engineer',  notes: 'Freelance. Works weekends. Has his own gear for small events.',     last_contacted: sub(12), follow_up_date: null   },
+    { name: 'Jordan Lee',    email: 'jordanlee.photo@gmail.com', phone: '778-555-0365', role: 'Photo Assistant', notes: 'Available for day shoots. Learning second shooter role.',            last_contacted: sub(35), follow_up_date: add(3) },
+    { name: 'Sam Wilson',    email: 'sam@wilsondrones.ca',       phone: '604-555-0502', role: 'Drone Operator',  notes: 'Licensed AdvROC. Essential for landscape and real estate work.',    last_contacted: sub(75), follow_up_date: sub(5) },
+  ].forEach(s => {
+    const r = DB.insert('fcc_collaborators', s);
+    if (r) CRM.collaborators.push(r);
+  });
+}
+
+// ── Warning helpers ───────────────────────────────────────────
 
 function crmGetWarningLevel(contact) {
   const today = new Date();
@@ -57,7 +95,7 @@ function crmGetWarningLevel(contact) {
   let isWarning = false;
 
   if (contact.last_contacted) {
-    const last     = new Date(contact.last_contacted + 'T00:00:00');
+    const last      = new Date(contact.last_contacted + 'T00:00:00');
     const daysSince = Math.floor((today - last) / 864e5);
     if (daysSince > 60) isDanger  = true;
     else if (daysSince > 30) isWarning = true;
@@ -79,7 +117,7 @@ function crmWarnSort(level) {
   return level === 'danger' ? 0 : level === 'warning' ? 1 : 2;
 }
 
-// ── Tab switching ─────────────────────────────────────────
+// ── Tab switching ─────────────────────────────────────────────
 
 function crmSwitchTab(tab) {
   CRM.tab        = tab;
@@ -96,11 +134,11 @@ function crmSwitchTab(tab) {
   crmShowEmpty();
 }
 
-// ── List ──────────────────────────────────────────────────
+// ── List ──────────────────────────────────────────────────────
 
 function crmGetFilteredSorted() {
   const q   = CRM.search.toLowerCase().trim();
-  const all = DB.getAll(CRM_KEYS[CRM.tab]);
+  const all = CRM[CRM.tab]; // read from in-memory array
 
   const filtered = q ? all.filter(c =>
     (c.name    || '').toLowerCase().includes(q) ||
@@ -122,11 +160,10 @@ function crmRenderList() {
   const contacts = crmGetFilteredSorted();
 
   if (contacts.length === 0) {
-    const q   = CRM.search.trim();
-    const all = DB.getAll(CRM_KEYS[CRM.tab]);
+    const q    = CRM.search.trim();
     const noun = CRM.tab === 'clients' ? 'client' : 'collaborator';
 
-    if (all.length === 0) {
+    if (CRM[CRM.tab].length === 0) {
       list.innerHTML = `<div class="crm-empty-state">
         <p>No ${noun}s yet.</p>
         <button class="btn-primary" onclick="crmOpenNew()">+ Add ${CRM.tab === 'clients' ? 'Client' : 'Collaborator'}</button>
@@ -153,7 +190,7 @@ function crmFilterList() {
   crmRenderList();
 }
 
-// ── Detail panel ──────────────────────────────────────────
+// ── Detail panel ──────────────────────────────────────────────
 
 function crmShowEmpty() {
   const empty   = document.getElementById('crm-detail-empty');
@@ -168,7 +205,7 @@ function crmSelectContact(id) {
   CRM.mode       = null;
   crmRenderList();
 
-  const contact = DB.getById(CRM_KEYS[CRM.tab], id);
+  const contact = CRM[CRM.tab].find(c => c.id === id);
   if (!contact) return;
 
   crmRenderDetail(contact);
@@ -199,11 +236,11 @@ function crmRenderDetail(contact) {
         { key: 'follow_up_date', label: 'Follow-up Date', type: 'date'  },
       ]
     : [
-        { key: 'email',          label: 'Email',           type: 'email' },
-        { key: 'phone',          label: 'Phone',           type: 'tel'   },
-        { key: 'role',           label: 'Role / Specialty',type: 'text'  },
-        { key: 'last_contacted', label: 'Last Contacted',  type: 'date'  },
-        { key: 'follow_up_date', label: 'Follow-up Date',  type: 'date'  },
+        { key: 'email',          label: 'Email',            type: 'email' },
+        { key: 'phone',          label: 'Phone',            type: 'tel'   },
+        { key: 'role',           label: 'Role / Specialty', type: 'text'  },
+        { key: 'last_contacted', label: 'Last Contacted',   type: 'date'  },
+        { key: 'follow_up_date', label: 'Follow-up Date',   type: 'date'  },
       ];
 
   const fieldRowsHtml = `<div class="crm-field-group">
@@ -250,10 +287,10 @@ function crmFmtVal(key, val) {
 }
 
 function crmLinkedProjectsHtml(contactId) {
-  const jKey   = CRM.tab === 'clients' ? 'fcc_project_clients'       : 'fcc_project_collaborators';
-  const fKey   = CRM.tab === 'clients' ? 'client_id'                 : 'collaborator_id';
-  const jrows  = DB.junctionGet(jKey, fKey, contactId);
-  const linked = DB.getAll('fcc_projects').filter(p => jrows.some(j => j.project_id === p.id));
+  const jrows  = CRM.tab === 'clients'
+    ? CRM.projectClients.filter(j => j.client_id === contactId)
+    : CRM.projectCollaborators.filter(j => j.collaborator_id === contactId);
+  const linked = CRM.projects.filter(p => jrows.some(j => j.project_id === p.id));
 
   if (linked.length === 0) {
     return `<div class="crm-linked-projects">
@@ -273,12 +310,12 @@ function crmLinkedProjectsHtml(contactId) {
   </div>`;
 }
 
-// ── Inline editing ────────────────────────────────────────
+// ── Inline editing ────────────────────────────────────────────
 
 function crmEditField(id, field, type, rowEl) {
   if (rowEl.querySelector('input, select')) return;
 
-  const contact = DB.getById(CRM_KEYS[CRM.tab], id);
+  const contact = CRM[CRM.tab].find(c => c.id === id);
   if (!contact) return;
 
   const valEl   = rowEl.querySelector('.crm-field-val');
@@ -297,21 +334,23 @@ function crmEditField(id, field, type, rowEl) {
 
   function commit() {
     const newVal = input.value.trim() || null;
-    DB.update(CRM_KEYS[CRM.tab], id, { [field]: newVal });
+
+    const updated = DB.update(CRM_KEYS[CRM.tab], id, { [field]: newVal });
+    const idx = CRM[CRM.tab].findIndex(c => c.id === id);
+    if (idx !== -1 && updated) CRM[CRM.tab][idx] = updated;
 
     const newSpan = document.createElement('span');
-    newSpan.className         = 'field-row__value crm-field-val';
+    newSpan.className        = 'field-row__value crm-field-val';
     newSpan.setAttribute('data-field', field);
-    newSpan.innerHTML         = crmFmtVal(field, newVal || '');
+    newSpan.innerHTML        = crmFmtVal(field, newVal || '');
     input.replaceWith(newSpan);
     if (chevron) chevron.style.visibility = '';
     rowEl.onclick = () => crmEditField(id, field, type, rowEl);
 
-    // Refresh warning badge if a date field changed
     if (field === 'last_contacted' || field === 'follow_up_date') {
-      const updated  = DB.getById(CRM_KEYS[CRM.tab], id);
-      const level    = crmGetWarningLevel(updated);
-      const nameRow  = document.querySelector('.crm-detail-name-row');
+      const fresh   = CRM[CRM.tab].find(c => c.id === id);
+      const level   = crmGetWarningLevel(fresh);
+      const nameRow = document.querySelector('.crm-detail-name-row');
       if (nameRow) {
         nameRow.querySelector('.crm-warn-badge')?.remove();
         if (level !== 'ok') {
@@ -336,7 +375,7 @@ function crmEditField(id, field, type, rowEl) {
 
 function crmEditName(id, nameEl) {
   if (nameEl.querySelector('input')) return;
-  const contact = DB.getById(CRM_KEYS[CRM.tab], id);
+  const contact = CRM[CRM.tab].find(c => c.id === id);
   if (!contact) return;
 
   const input   = document.createElement('input');
@@ -351,7 +390,9 @@ function crmEditName(id, nameEl) {
 
   function commit() {
     const newName = input.value.trim() || contact.name || 'Unnamed';
-    DB.update(CRM_KEYS[CRM.tab], id, { name: newName });
+    const updated = DB.update(CRM_KEYS[CRM.tab], id, { name: newName });
+    const idx = CRM[CRM.tab].findIndex(c => c.id === id);
+    if (idx !== -1 && updated) CRM[CRM.tab][idx] = updated;
     nameEl.textContent = newName;
     nameEl.onclick = () => crmEditName(id, nameEl);
     crmRenderList();
@@ -366,11 +407,13 @@ function crmEditName(id, nameEl) {
 }
 
 function crmSaveNotes(id, value) {
-  DB.update(CRM_KEYS[CRM.tab], id, { notes: value });
+  const updated = DB.update(CRM_KEYS[CRM.tab], id, { notes: value });
+  const idx = CRM[CRM.tab].findIndex(c => c.id === id);
+  if (idx !== -1 && updated) CRM[CRM.tab][idx] = updated;
   crmShowToast('Notes saved');
 }
 
-// ── New contact ───────────────────────────────────────────
+// ── New contact ───────────────────────────────────────────────
 
 function crmOpenNew() {
   CRM.selectedId = null;
@@ -436,38 +479,34 @@ function crmOpenNew() {
 
 function crmCreateContact(e) {
   e.preventDefault();
-  try {
-    const form = document.getElementById('crm-new-form');
-    if (!form) return;
+  const form = document.getElementById('crm-new-form');
+  if (!form) return;
 
-    const raw  = Object.fromEntries(new FormData(form));
-    const data = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, v.trim() || null]));
+  const raw  = Object.fromEntries(new FormData(form));
+  const data = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, v.trim() || null]));
 
-    if (!data.name) {
-      crmShowToast('Name is required');
-      form.querySelector('input[name="name"]')?.focus();
-      return;
-    }
-
-    if (CRM.tab === 'clients') data.type = 'client';
-
-    const created  = DB.insert(CRM_KEYS[CRM.tab], data);
-    CRM.mode       = null;
-    CRM.selectedId = created.id;
-
-    crmRenderList();
-    crmRenderDetail(created);
-    crmShowToast(`${CRM.tab === 'clients' ? 'Client' : 'Collaborator'} created`);
-  } catch(err) {
-    console.error('crmCreateContact failed:', err);
-    crmShowToast('Error: ' + err.message);
+  if (!data.name) {
+    crmShowToast('Name is required');
+    form.querySelector('input[name="name"]')?.focus();
+    return;
   }
+
+  if (CRM.tab === 'clients') data.type = 'client';
+
+  const created = DB.insert(CRM_KEYS[CRM.tab], data);
+  CRM[CRM.tab].push(created);
+  CRM.mode       = null;
+  CRM.selectedId = created.id;
+
+  crmRenderList();
+  crmRenderDetail(created);
+  crmShowToast(`${CRM.tab === 'clients' ? 'Client' : 'Collaborator'} created`);
 }
 
-// ── Delete ────────────────────────────────────────────────
+// ── Delete ────────────────────────────────────────────────────
 
 function crmConfirmDelete(id) {
-  const contact = DB.getById(CRM_KEYS[CRM.tab], id);
+  const contact = CRM[CRM.tab].find(c => c.id === id);
   if (!contact) return;
 
   document.getElementById('crm-modal-title').textContent = 'Delete Contact';
@@ -477,9 +516,17 @@ function crmConfirmDelete(id) {
 
   _crmModalCallback = () => {
     DB.delete(CRM_KEYS[CRM.tab], id);
-    const jKey = CRM.tab === 'clients' ? 'fcc_project_clients'  : 'fcc_project_collaborators';
-    const fKey = CRM.tab === 'clients' ? 'client_id'            : 'collaborator_id';
-    DB.junctionGet(jKey, fKey, id).forEach(row => DB.junctionRemove(jKey, row));
+    CRM[CRM.tab] = CRM[CRM.tab].filter(c => c.id !== id);
+
+    if (CRM.tab === 'clients') {
+      CRM.projectClients.filter(j => j.client_id === id)
+        .forEach(row => DB.junctionRemove('fcc_project_clients', row));
+      CRM.projectClients = CRM.projectClients.filter(j => j.client_id !== id);
+    } else {
+      CRM.projectCollaborators.filter(j => j.collaborator_id === id)
+        .forEach(row => DB.junctionRemove('fcc_project_collaborators', row));
+      CRM.projectCollaborators = CRM.projectCollaborators.filter(j => j.collaborator_id !== id);
+    }
 
     CRM.selectedId = null;
     crmRenderList();
@@ -498,7 +545,7 @@ function crmModalConfirm() {
   if (_crmModalCallback) { _crmModalCallback(); _crmModalCallback = null; }
 }
 
-// ── Toast ─────────────────────────────────────────────────
+// ── Toast ─────────────────────────────────────────────────────
 
 function crmShowToast(msg) {
   const el = document.getElementById('crm-toast');
@@ -509,10 +556,9 @@ function crmShowToast(msg) {
   _crmToastTimer = setTimeout(() => el.classList.remove('fi-toast--visible'), 2200);
 }
 
-// ── Utility ───────────────────────────────────────────────
+// ── Utility ───────────────────────────────────────────────────
 
-// Router calls initCrm() (title-case) — alias to the canonical name
-const initCrm = initCRM;
+const initCrm = initCRM; // router calls initCrm() (title-case first letter)
 
 function crmEsc(str) {
   return String(str)
