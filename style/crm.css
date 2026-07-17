@@ -260,8 +260,8 @@
   font-family: var(--font-body);
   font-size: var(--text-sm);
   text-align: right;
-  min-width: 160px;
-  max-width: 340px;
+  min-width: 200px;
+  flex: 1;
   padding: 0;
 }
 
