@@ -766,6 +766,11 @@ function cfRender() {
               </div>
             </div>
             <div class="cf-cat-body">
+              <div class="cf-col-headers">
+                <span class="cf-col-desc">Description</span>
+                <span class="cf-col-amount">Amount</span>
+                <span class="cf-col-freq">Frequency</span>
+              </div>
               ${cat.items.map((item, itemIdx) => `
                 <div class="cf-line-item">
                   <div class="cf-line-label">

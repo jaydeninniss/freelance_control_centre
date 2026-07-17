@@ -751,6 +751,25 @@
 .cf-cat-body { display: none; padding: 0 16px 12px; }
 .cf-category.expanded .cf-cat-body { display: block; }
 
+.cf-col-headers {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+.cf-col-headers span {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cf-col-desc  { flex: 1; min-width: 0; }
+.cf-col-amount { width: 90px; text-align: right; flex-shrink: 0; }
+.cf-col-freq  { width: 110px; flex-shrink: 0; padding-left: 2px; }
+
 .cf-line-item {
   display: flex;
   align-items: center;

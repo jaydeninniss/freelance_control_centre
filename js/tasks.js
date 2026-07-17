@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// Tasks — Kanban board backed by Supabase.
+// Tasks — Kanban board backed by localStorage.
 // Exposed global: initTasks() — called by router.js section init pattern.
 // All functions prefixed tk* to avoid collisions.
 // ─────────────────────────────────────────────────────────────
@@ -23,6 +23,8 @@ const TK_DEFAULT_COLUMNS = [
   { name: 'Done',        color: '#5e7a5e', position: 2 },
 ];
 
+const TK_KEY = 'fcc_tasks';
+
 // ── Module state ──────────────────────────────────────────────
 
 let TK = {
@@ -35,7 +37,7 @@ let TK = {
 
 // Pending detail panel state
 let TK_PANEL = {
-  taskId: null,   // null = new task
+  taskId: null,
   colId: null,
   title: '',
   description: '',
@@ -50,7 +52,7 @@ let TK_DRAG = {
   type: null,     // 'task' | 'column'
   taskId: null,
   srcColId: null,
-  colId: null,    // for column drag
+  colId: null,
 };
 
 // Modal callback
@@ -59,99 +61,78 @@ let TK_MODAL_CB = null;
 // Toast timer
 let TK_TOAST_TIMER = null;
 
-// ── Guard: check Supabase is configured ───────────────────────
+// ── localStorage persistence ──────────────────────────────────
 
-function tkSupabaseReady() {
-  return typeof CONFIG !== 'undefined'
-    && CONFIG.SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE'
-    && CONFIG.SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY_HERE';
+function tkSave() {
+  try {
+    localStorage.setItem(TK_KEY, JSON.stringify({
+      columns: TK.columns,
+      tasks: TK.tasks,
+      projects: TK.projects,
+    }));
+  } catch(e) {}
+}
+
+function tkLoad() {
+  try {
+    const raw = localStorage.getItem(TK_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      TK.columns  = data.columns  || [];
+      TK.tasks    = data.tasks    || [];
+      TK.projects = data.projects || [];
+    }
+  } catch(e) {}
+}
+
+function tkNextId() {
+  return String(Date.now() + Math.floor(Math.random() * 1000));
 }
 
 // ── Entry point ───────────────────────────────────────────────
 
-async function initTasks() {
-  if (!tkSupabaseReady()) {
-    tkShowConfigError();
-    return;
-  }
-
+function initTasks() {
   // Reset state for re-navigation
   TK.filters = { search: '', projectId: '', label: '', due: '' };
   TK.openMenuColId = null;
   TK_DRAG = { type: null, taskId: null, srcColId: null, colId: null };
   tkCloseDetail(true);
 
-  tkShowLoading(true);
+  tkLoad();
 
-  try {
-    await tkLoadData();
-  } catch (err) {
-    tkToast('Failed to load board data. Check your Supabase connection.');
-    tkShowLoading(false);
-    return;
+  if (TK.columns.length === 0) {
+    const colTodo  = { id: tkNextId(), name: 'To Do',       color: '#5a9c5a', position: 0 };
+    const colProg  = { id: tkNextId(), name: 'In Progress', color: '#c9923a', position: 1 };
+    const colDone  = { id: tkNextId(), name: 'Done',        color: '#5e7a5e', position: 2 };
+    TK.columns = [colTodo, colProg, colDone];
+
+    const today = new Date();
+    const addDays = d => { const dt = new Date(today); dt.setDate(dt.getDate() + d); return dt.toISOString().slice(0, 10); };
+
+    TK.tasks = [
+      { id: tkNextId(), title: 'Edit wedding highlight reel',      description: 'Deliver 3–5 min edit. Client wants upbeat music.',  column_id: colProg.id, color: '#5a8abf', labels: ['Video'],       due_date: addDays(3),  project_id: null, position: 0 },
+      { id: tkNextId(), title: 'Send invoice — Chen shoot',        description: null,                                                column_id: colTodo.id, color: '#c9923a', labels: ['Admin'],       due_date: addDays(1),  project_id: null, position: 0 },
+      { id: tkNextId(), title: 'Back up drone footage',            description: null,                                                column_id: colTodo.id, color: null,      labels: [],              due_date: null,        project_id: null, position: 1 },
+      { id: tkNextId(), title: 'Cull + colour grade product shoot',description: '~400 selects, deliver 80 finals.',                 column_id: colTodo.id, color: '#8a6abf', labels: ['Photo'],       due_date: addDays(5),  project_id: null, position: 2 },
+      { id: tkNextId(), title: 'Update portfolio website',         description: 'Add 2026 projects to the gallery page.',           column_id: colTodo.id, color: null,      labels: ['Admin'],       due_date: null,        project_id: null, position: 3 },
+      { id: tkNextId(), title: 'Export social cuts — café promo',  description: 'Square + 9:16 versions for IG and Stories.',       column_id: colProg.id, color: '#4a9a8a', labels: ['Video','Edit'], due_date: addDays(2),  project_id: null, position: 1 },
+      { id: tkNextId(), title: 'Deliver family portraits',         description: null,                                                column_id: colDone.id, color: '#5a9c5a', labels: ['Photo'],       due_date: null,        project_id: null, position: 0 },
+      { id: tkNextId(), title: 'Submit broadcast package',         description: null,                                                column_id: colDone.id, color: null,      labels: [],              due_date: null,        project_id: null, position: 1 },
+    ];
+    tkSave();
   }
 
-  tkShowLoading(false);
-  tkRenderBoard();
-  tkBindFilterBar();
-  tkBindDocEvents();
-}
-
-function tkShowConfigError() {
-  const loading = document.getElementById('tk-loading');
-  if (loading) {
-    loading.innerHTML = `
-      <div style="text-align:center;max-width:340px;padding:20px">
-        <div style="font-size:2rem;margin-bottom:12px">🔌</div>
-        <div style="color:var(--text-secondary);font-size:var(--text-sm);line-height:1.6">
-          Supabase is not configured yet.<br>
-          Fill in <code style="color:var(--accent-bright)">SUPABASE_URL</code> and <code style="color:var(--accent-bright)">SUPABASE_ANON_KEY</code> in <code style="color:var(--accent-bright)">config.js</code>.
-        </div>
-      </div>
-    `;
-  }
-}
-
-function tkShowLoading(show) {
+  // Hide loading spinner, show board
   const loading = document.getElementById('tk-loading');
   const wrap    = document.getElementById('tk-board-wrap');
-  if (loading) loading.style.display = show ? 'flex' : 'none';
-  if (wrap)    wrap.style.display    = show ? 'none'  : 'flex';
-}
-
-// ── Data loading ──────────────────────────────────────────────
-
-async function tkLoadData() {
-  const [colRes, taskRes, projRes] = await Promise.all([
-    supabaseClient.from('task_columns').select('*').order('position'),
-    supabaseClient.from('tasks').select('*').order('position'),
-    supabaseClient.from('projects').select('id, title').order('title'),
-  ]);
-
-  if (colRes.error)  throw colRes.error;
-  if (taskRes.error) throw taskRes.error;
-  // Projects error is non-fatal
-
-  TK.columns  = colRes.data  || [];
-  TK.tasks    = taskRes.data || [];
-  TK.projects = projRes.data || [];
-
-  // Seed default columns on first run
-  if (TK.columns.length === 0) {
-    await tkSeedDefaultColumns();
-  }
+  if (loading) loading.style.display = 'none';
+  if (wrap)    wrap.style.display    = 'flex';
 
   tkRefreshLabelFilter();
   tkRefreshProjectFilter();
-}
-
-async function tkSeedDefaultColumns() {
-  const { data, error } = await supabaseClient
-    .from('task_columns')
-    .insert(TK_DEFAULT_COLUMNS)
-    .select();
-  if (error) throw error;
-  TK.columns = data || [];
+  tkRenderBoard();
+  tkBindFilterBar();
+  tkBindDocEvents();
 }
 
 // ── Board render ──────────────────────────────────────────────
@@ -166,7 +147,6 @@ function tkRenderBoard() {
     board.appendChild(tkBuildColumn(col));
   });
 
-  // Add column button
   const addBtn = document.createElement('button');
   addBtn.className = 'tk-add-col-btn';
   addBtn.id = 'tk-add-col-btn';
@@ -182,7 +162,6 @@ function tkBuildColumn(col) {
   wrap.className = 'tk-column';
   wrap.dataset.colId = col.id;
 
-  // Header
   wrap.innerHTML = `
     <div class="tk-col-header" draggable="true">
       <div class="tk-col-dot" style="background:${esc(col.color || '#5e7a5e')}"></div>
@@ -210,21 +189,17 @@ function tkBuildColumn(col) {
     </button>
   `;
 
-  // Populate cards
   const body = wrap.querySelector('.tk-col-body');
   visibleTasks.forEach(task => body.appendChild(tkBuildCard(task)));
 
-  // Column header drag (reorder columns)
   const header = wrap.querySelector('.tk-col-header');
   header.addEventListener('dragstart', e => tkColDragStart(e, col.id));
   header.addEventListener('dragend',   e => tkColDragEnd(e));
 
-  // Column body drop zone
   body.addEventListener('dragover',  e => tkCardDragOver(e, col.id));
   body.addEventListener('dragleave', e => tkCardDragLeave(e));
   body.addEventListener('drop',      e => tkCardDrop(e, col.id));
 
-  // Column drop zone (for column reorder)
   wrap.addEventListener('dragover',  e => tkColDragOver(e, col.id));
   wrap.addEventListener('drop',      e => tkColDrop(e, col.id));
 
@@ -235,7 +210,7 @@ function tkRenderColumn(colId) {
   const col = TK.columns.find(c => c.id === colId);
   if (!col) return;
 
-  const body = document.getElementById(`tk-col-body-${colId}`);
+  const body  = document.getElementById(`tk-col-body-${colId}`);
   const count = document.getElementById(`tk-col-count-${colId}`);
   if (!body) return;
 
@@ -254,9 +229,9 @@ function tkBuildCard(task) {
   const borderColor = task.color || 'var(--border-light)';
   card.style.borderLeftColor = borderColor;
 
-  const labels = (task.labels || []).slice(0, 3);
+  const labels  = (task.labels || []).slice(0, 3);
   const project = task.project_id ? TK.projects.find(p => p.id === task.project_id) : null;
-  const due = task.due_date ? tkFormatDue(task.due_date) : null;
+  const due     = task.due_date ? tkFormatDue(task.due_date) : null;
 
   card.innerHTML = `
     <div class="tk-card-title">${esc(task.title || 'Untitled')}</div>
@@ -282,22 +257,18 @@ function tkBuildCard(task) {
 
 function tkGetFilteredTasks(colId) {
   let tasks = TK.tasks.filter(t => t.column_id === colId);
-
   const f = TK.filters;
 
   if (f.search) {
     const q = f.search.toLowerCase();
     tasks = tasks.filter(t => (t.title || '').toLowerCase().includes(q));
   }
-
   if (f.projectId) {
     tasks = tasks.filter(t => t.project_id === f.projectId);
   }
-
   if (f.label) {
     tasks = tasks.filter(t => (t.labels || []).includes(f.label));
   }
-
   if (f.due === 'overdue') {
     const today = todayIso();
     tasks = tasks.filter(t => t.due_date && t.due_date < today);
@@ -305,7 +276,7 @@ function tkGetFilteredTasks(colId) {
     const today = new Date();
     const weekEnd = new Date(today);
     weekEnd.setDate(today.getDate() + 7);
-    const todayStr = todayIso();
+    const todayStr  = todayIso();
     const weekEndStr = weekEnd.toISOString().slice(0, 10);
     tasks = tasks.filter(t => t.due_date && t.due_date >= todayStr && t.due_date <= weekEndStr);
   } else if (f.due === 'no-date') {
@@ -321,10 +292,10 @@ function tkBindFilterBar() {
   const labelSel = document.getElementById('tk-filter-label');
   const dueSel   = document.getElementById('tk-filter-due');
 
-  if (search)   search.addEventListener('input', () => { TK.filters.search = search.value; tkReRenderAllColumns(); });
-  if (projSel)  projSel.addEventListener('change', () => { TK.filters.projectId = projSel.value; tkReRenderAllColumns(); });
-  if (labelSel) labelSel.addEventListener('change', () => { TK.filters.label = labelSel.value; tkReRenderAllColumns(); });
-  if (dueSel)   dueSel.addEventListener('change', () => { TK.filters.due = dueSel.value; tkReRenderAllColumns(); });
+  if (search)   search.addEventListener('input',  () => { TK.filters.search    = search.value;   tkReRenderAllColumns(); });
+  if (projSel)  projSel.addEventListener('change',() => { TK.filters.projectId = projSel.value;  tkReRenderAllColumns(); });
+  if (labelSel) labelSel.addEventListener('change',()=> { TK.filters.label     = labelSel.value; tkReRenderAllColumns(); });
+  if (dueSel)   dueSel.addEventListener('change', () => { TK.filters.due       = dueSel.value;   tkReRenderAllColumns(); });
 }
 
 function tkReRenderAllColumns() {
@@ -379,26 +350,19 @@ function tkRenameCol(colId) {
   input.focus();
   input.select();
 
-  const commit = async () => {
+  const commit = () => {
     const newName = input.value.trim() || current;
     input.replaceWith(nameEl);
     nameEl.textContent = newName;
-
     if (newName === current) return;
-
     const col = TK.columns.find(c => c.id === colId);
     if (col) col.name = newName;
-
-    const { error } = await supabaseClient
-      .from('task_columns')
-      .update({ name: newName })
-      .eq('id', colId);
-    if (error) { tkToast('Failed to rename column.'); col.name = current; nameEl.textContent = current; }
+    tkSave();
   };
 
   input.addEventListener('blur',    commit);
   input.addEventListener('keydown', e => {
-    if (e.key === 'Enter')  { input.blur(); }
+    if (e.key === 'Enter')  input.blur();
     if (e.key === 'Escape') { input.value = current; input.blur(); }
   });
 }
@@ -409,25 +373,18 @@ function tkRecolorColOpen(colId) {
   swatchWrap.style.display = swatchWrap.style.display === 'none' ? 'grid' : 'none';
 }
 
-async function tkRecolorCol(colId, color) {
+function tkRecolorCol(colId, color) {
   tkCloseAllMenus();
   const col = TK.columns.find(c => c.id === colId);
   if (!col) return;
-  const old = col.color;
   col.color = color;
+  tkSave();
 
-  // Update the dot immediately
   const column = document.querySelector(`.tk-column[data-col-id="${colId}"]`);
   if (column) {
     const dot = column.querySelector('.tk-col-dot');
     if (dot) dot.style.background = color;
   }
-
-  const { error } = await supabaseClient
-    .from('task_columns')
-    .update({ color })
-    .eq('id', colId);
-  if (error) { tkToast('Failed to update colour.'); col.color = old; }
 }
 
 function tkDeleteCol(colId) {
@@ -439,16 +396,10 @@ function tkDeleteCol(colId) {
     ? `Delete "${col.name}"? The ${taskCount} task${taskCount !== 1 ? 's' : ''} in this column will remain but become unlinked.`
     : `Delete column "${col.name}"?`;
 
-  tkShowModal('Delete column?', msg, async () => {
-    const { error } = await supabaseClient
-      .from('task_columns')
-      .delete()
-      .eq('id', colId);
-    if (error) { tkToast('Failed to delete column.'); return; }
-
-    // Unlink tasks locally (they stay in DB but column_id → null)
+  tkShowModal('Delete column?', msg, () => {
     TK.tasks.forEach(t => { if (t.column_id === colId) t.column_id = null; });
     TK.columns = TK.columns.filter(c => c.id !== colId);
+    tkSave();
     tkRenderBoard();
     tkToast(`Column "${col.name}" deleted.`);
   });
@@ -483,23 +434,16 @@ function tkShowAddColForm() {
   }
 }
 
-async function tkSubmitAddCol() {
+function tkSubmitAddCol() {
   const input = document.getElementById('tk-new-col-input');
   const name = (input ? input.value.trim() : '');
   if (!name) { if (input) input.focus(); return; }
 
-  tkCancelAddCol(); // remove form first
+  tkCancelAddCol();
 
-  const position = TK.columns.length;
-  const { data, error } = await supabaseClient
-    .from('task_columns')
-    .insert({ name, color: '#5a9c5a', position })
-    .select()
-    .single();
-
-  if (error) { tkToast('Failed to create column.'); return; }
-
-  TK.columns.push(data);
+  const col = { id: tkNextId(), name, color: '#5a9c5a', position: TK.columns.length };
+  TK.columns.push(col);
+  tkSave();
   tkRenderBoard();
   tkToast(`Column "${name}" created.`);
 }
@@ -537,7 +481,6 @@ function tkOpenDetail(taskId, defaultColId) {
   if (panel)    panel.classList.add('open');
   if (backdrop) backdrop.classList.add('visible');
 
-  // Focus title
   setTimeout(() => {
     const title = document.getElementById('tk-detail-title');
     if (title) title.focus();
@@ -630,7 +573,6 @@ function tkRenderDetailPanel() {
     </div>
   `;
 
-  // Label input: add on Enter or comma
   const labelInput = document.getElementById('tk-label-input');
   if (labelInput) {
     labelInput.addEventListener('keydown', e => {
@@ -645,7 +587,6 @@ function tkRenderDetailPanel() {
 
 function tkPanelSetColor(color) {
   TK_PANEL.color = color;
-  // Re-render just the swatches
   const wrap = document.querySelector('.tk-detail-panel .tk-swatches');
   if (wrap) {
     wrap.querySelectorAll('.tk-swatch').forEach(s => {
@@ -678,7 +619,7 @@ function tkRerenderLabelChips() {
     `<span class="tk-label-chip" onclick="tkPanelRemoveLabel(${i})">${esc(l)}<span class="tk-chip-x"></span></span>`
   ).join('');
 
-  const input = document.getElementById('tk-label-input');
+  const input    = document.getElementById('tk-label-input');
   const inputVal = input ? input.value : '';
 
   wrap.innerHTML = chips + `<input class="tk-label-text-input" id="tk-label-input"
@@ -697,7 +638,7 @@ function tkRerenderLabelChips() {
   }
 }
 
-async function tkSaveTask() {
+function tkSaveTask() {
   const title = (document.getElementById('tk-detail-title') || {}).value || TK_PANEL.title;
   if (!title.trim()) { tkToast('Please enter a task title.'); return; }
 
@@ -716,59 +657,36 @@ async function tkSaveTask() {
   const affectedCols = new Set();
 
   if (TK_PANEL.taskId) {
-    // Update existing
     const existing = TK.tasks.find(t => t.id === TK_PANEL.taskId);
     if (existing && existing.column_id !== TK_PANEL.colId) {
       affectedCols.add(existing.column_id);
     }
     affectedCols.add(TK_PANEL.colId);
 
-    const { error } = await supabaseClient
-      .from('tasks')
-      .update(payload)
-      .eq('id', TK_PANEL.taskId);
-
-    if (error) { tkToast('Failed to save task.'); return; }
-
-    // Update local state
     const idx = TK.tasks.findIndex(t => t.id === TK_PANEL.taskId);
     if (idx !== -1) Object.assign(TK.tasks[idx], payload);
-
   } else {
-    // Insert new
     const position = TK.tasks.filter(t => t.column_id === TK_PANEL.colId).length;
-    const { data, error } = await supabaseClient
-      .from('tasks')
-      .insert({ ...payload, position })
-      .select()
-      .single();
-
-    if (error) { tkToast('Failed to create task.'); return; }
-
-    TK.tasks.push(data);
+    const newTask  = { id: tkNextId(), position, ...payload };
+    TK.tasks.push(newTask);
     affectedCols.add(TK_PANEL.colId);
   }
 
+  tkSave();
   tkCloseDetail();
   affectedCols.forEach(colId => { if (colId) tkRenderColumn(colId); });
   tkRefreshLabelFilter();
   tkToast('Task saved.');
 }
 
-async function tkDeleteTask(taskId) {
+function tkDeleteTask(taskId) {
   const task = TK.tasks.find(t => t.id === taskId);
   if (!task) return;
   const colId = task.column_id;
 
-  tkShowModal('Delete task?', `"${task.title}" will be permanently deleted.`, async () => {
-    const { error } = await supabaseClient
-      .from('tasks')
-      .delete()
-      .eq('id', taskId);
-
-    if (error) { tkToast('Failed to delete task.'); return; }
-
+  tkShowModal('Delete task?', `"${task.title}" will be permanently deleted.`, () => {
     TK.tasks = TK.tasks.filter(t => t.id !== taskId);
+    tkSave();
     tkCloseDetail();
     if (colId) tkRenderColumn(colId);
     tkRefreshLabelFilter();
@@ -785,7 +703,6 @@ function tkCardDragStart(e, taskId, srcColId) {
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('text/plain', taskId);
 
-  // Visual feedback
   setTimeout(() => {
     const card = document.querySelector(`.tk-card[data-task-id="${taskId}"]`);
     if (card) card.classList.add('dragging');
@@ -803,14 +720,13 @@ function tkCardDragOver(e, colId) {
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
 
-  // Remove existing indicators
   document.querySelectorAll('.tk-drop-line').forEach(l => l.remove());
 
-  const body  = document.getElementById(`tk-col-body-${colId}`);
+  const body = document.getElementById(`tk-col-body-${colId}`);
   if (!body) return;
 
-  const cards = [...body.querySelectorAll('.tk-card:not(.dragging)')];
-  let inserted = false;
+  const cards    = [...body.querySelectorAll('.tk-card:not(.dragging)')];
+  let inserted   = false;
 
   for (const card of cards) {
     const rect = card.getBoundingClientRect();
@@ -831,21 +747,19 @@ function tkCardDragOver(e, colId) {
 }
 
 function tkCardDragLeave(e) {
-  // Only clean up if leaving the column body entirely
   const body = e.currentTarget;
   if (!body.contains(e.relatedTarget)) {
     document.querySelectorAll('.tk-drop-line').forEach(l => l.remove());
   }
 }
 
-async function tkCardDrop(e, destColId) {
+function tkCardDrop(e, destColId) {
   e.preventDefault();
   if (TK_DRAG.type !== 'task') return;
 
   const taskId   = TK_DRAG.taskId;
   const srcColId = TK_DRAG.srcColId;
 
-  // Find drop position from indicator
   const body = document.getElementById(`tk-col-body-${destColId}`);
   let newPosition = 0;
   if (body) {
@@ -856,50 +770,18 @@ async function tkCardDrop(e, destColId) {
 
   document.querySelectorAll('.tk-drop-line').forEach(l => l.remove());
 
-  // Update local task
   const task = TK.tasks.find(t => t.id === taskId);
   if (!task) return;
 
-  const oldColId   = task.column_id;
-  const oldPos     = task.position;
-  task.column_id   = destColId;
-  task.position    = newPosition;
+  task.column_id = destColId;
+  task.position  = newPosition;
 
-  // Reindex all tasks in affected columns
   tkReindexColumn(destColId);
   if (srcColId !== destColId) tkReindexColumn(srcColId);
 
-  // Re-render affected columns immediately (optimistic)
+  tkSave();
   tkRenderColumn(destColId);
   if (srcColId !== destColId) tkRenderColumn(srcColId);
-
-  // Persist to Supabase
-  try {
-    const updates = [];
-
-    // Update the moved task's column and position
-    updates.push(
-      supabaseClient.from('tasks').update({ column_id: destColId, position: task.position }).eq('id', taskId)
-    );
-
-    // Update positions of all tasks in dest col
-    const destTasks = TK.tasks.filter(t => t.column_id === destColId && t.id !== taskId);
-    destTasks.forEach(t => {
-      updates.push(supabaseClient.from('tasks').update({ position: t.position }).eq('id', t.id));
-    });
-
-    // Update positions of all tasks in src col (if different)
-    if (srcColId !== destColId) {
-      const srcTasks = TK.tasks.filter(t => t.column_id === srcColId);
-      srcTasks.forEach(t => {
-        updates.push(supabaseClient.from('tasks').update({ position: t.position }).eq('id', t.id));
-      });
-    }
-
-    await Promise.all(updates);
-  } catch (err) {
-    tkToast('Failed to save task position.');
-  }
 
   TK_DRAG = { type: null, taskId: null, srcColId: null, colId: null };
 }
@@ -914,7 +796,7 @@ function tkReindexColumn(colId) {
 // ── Drag and Drop — Columns ───────────────────────────────────
 
 function tkColDragStart(e, colId) {
-  if (TK_DRAG.type === 'task') return; // don't interfere with card drag
+  if (TK_DRAG.type === 'task') return;
   TK_DRAG.type  = 'column';
   TK_DRAG.colId = colId;
   e.dataTransfer.effectAllowed = 'move';
@@ -943,7 +825,7 @@ function tkColDragOver(e, targetColId) {
   if (col) col.classList.add('col-drag-over');
 }
 
-async function tkColDrop(e, targetColId) {
+function tkColDrop(e, targetColId) {
   if (TK_DRAG.type !== 'column') return;
   e.preventDefault();
   e.stopPropagation();
@@ -955,27 +837,17 @@ async function tkColDrop(e, targetColId) {
   const dragColId = TK_DRAG.colId;
   if (dragColId === targetColId) { TK_DRAG.type = null; return; }
 
-  // Swap positions
   const dragCol   = TK.columns.find(c => c.id === dragColId);
   const targetCol = TK.columns.find(c => c.id === targetColId);
   if (!dragCol || !targetCol) { TK_DRAG.type = null; return; }
 
-  const dragPos   = dragCol.position;
+  const dragPos      = dragCol.position;
   dragCol.position   = targetCol.position;
   targetCol.position = dragPos;
 
   TK.columns.sort((a, b) => a.position - b.position);
+  tkSave();
   tkRenderBoard();
-
-  // Persist
-  try {
-    await Promise.all([
-      supabaseClient.from('task_columns').update({ position: dragCol.position }).eq('id', dragColId),
-      supabaseClient.from('task_columns').update({ position: targetCol.position }).eq('id', targetColId),
-    ]);
-  } catch (err) {
-    tkToast('Failed to save column order.');
-  }
 
   TK_DRAG = { type: null, taskId: null, srcColId: null, colId: null };
 }
@@ -1021,9 +893,7 @@ function tkToast(msg) {
 // ── Document-level events ─────────────────────────────────────
 
 function tkBindDocEvents() {
-  // Close column menus on outside click
-  document.addEventListener('click', _tkDocClick);
-  // Escape key closes panel and modal
+  document.addEventListener('click',   _tkDocClick);
   document.addEventListener('keydown', _tkDocKey);
 }
 
@@ -1057,18 +927,17 @@ function todayIso() {
 
 function tkFormatDue(dateStr) {
   if (!dateStr) return null;
-  const today   = todayIso();
+  const today    = todayIso();
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().slice(0, 10);
 
-  if (dateStr < today)        return { text: 'Overdue',  cls: 'overdue' };
-  if (dateStr === today)      return { text: 'Today',    cls: 'due-today' };
-  if (dateStr === tomorrowStr)return { text: 'Tomorrow', cls: '' };
+  if (dateStr < today)         return { text: 'Overdue',  cls: 'overdue' };
+  if (dateStr === today)       return { text: 'Today',    cls: 'due-today' };
+  if (dateStr === tomorrowStr) return { text: 'Tomorrow', cls: '' };
 
-  // Format as "May 25"
   const [y, m, d] = dateStr.split('-').map(Number);
-  const dt = new Date(y, m - 1, d);
+  const dt    = new Date(y, m - 1, d);
   const label = dt.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
   return { text: label, cls: '' };
 }

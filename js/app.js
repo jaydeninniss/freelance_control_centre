@@ -38,13 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return getCookie('fcc_auth') === 'authenticated';
   }
 
-  if (checkCookieAuth()) {
-    revealApp();
-  } else {
-    authGate.style.display = 'flex';
-    app.style.display = 'none';
-    passwordInput.focus();
-  }
+  revealApp();
 
   // ── Unlock button ─────────────────────────────────────────
   async function attemptUnlock() {
